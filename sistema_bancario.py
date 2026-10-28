@@ -8,9 +8,7 @@
 # OK - Voltar ao menu principal após cada operação
 # OK - mensagem de erro caso o usuário digite uma opção inválida
 # OK - Mensagem de erro caso o usuário não digite um número inteiro para saque ou depoósito
-
 # Permitir o usuário alternar entre as opções usando as setas do teclado
-
 # Perguntar o número da conta
 # Pedir para digitar a senha
 # Conferir se a senha está correta
@@ -18,18 +16,23 @@
 # Zerar o limite de saques de todos os clientes ao final do dia
 # OK - Se valor de saque ou depósito for inváido, repetir a operação
 
-from datetime import datetime
+
+
+from datetime import datetime, date
 
 saldo = 1000
-limite_saques = 3
 limite_por_saque = 500
 historico_de_movimentacoes = [("Horário","Tipo de operação","Valor","Saldo após a movimentação")]
 saldo_inicial = saldo
+limite_de_transacoes = 10
+data_da_ultima_transacao = date.strptime("01/01/2020", "%d/%m/%Y")
+transacoes_disponiveis = limite_de_transacoes
+
 
 while True:
     opcao = input("Digite a letra correspondente à opção desejada \nS - SAQUE\nD - DEPÓSITO\nE - EXTRATO\nQ - SAIR\n\n" ).upper()
     if opcao == "S":
-        if limite_saques >= 1:
+        if transacoes_disponiveis >= 1:
             print(f"Seu saldo atual é de R${saldo:.2f}")
             while True:
                 try:
@@ -38,16 +41,24 @@ while True:
                         if valor_saque <= saldo and valor_saque <= limite_por_saque:                
                             saldo -= valor_saque
                             print(f"Seu novo saldo é R${saldo:.2f}")
+
                             if valor_saque > 0:
-                                limite_saques -= 1
-                                horario = datetime.now().strftime("%H:%M:%S")
+                                if date.today() == data_da_ultima_transacao:
+                                    transacoes_disponiveis -= 1
+                                else:
+                                    data_da_ultima_transacao = date.today()
+                                    transacoes_disponiveis = limite_de_transacoes
+                                    transacoes_disponiveis -= 1
+                                horario = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                                 nova_movimentacao = (horario,"Saque",-valor_saque,saldo)  
-                                historico_de_movimentacoes.append(nova_movimentacao)                            
-                            if limite_saques > 0:
-                                print(f"Você ainda tem {limite_saques} saques")
+                                historico_de_movimentacoes.append(nova_movimentacao)   
+                         
+                            if transacoes_disponiveis > 0:
+                                print(f"Você ainda tem {transacoes_disponiveis} transações disponíveis hoje")
                             else:
-                                print("Você não tem mais saques disponíveis")
+                                print("Você não tem mais transações disponíveis hoje")
                             break
+
                         elif saldo <= limite_por_saque:
                             print(f"Saldo insuficiente. Seu saldo é de R${saldo:.2f}")
                         else:
@@ -57,24 +68,38 @@ while True:
                 except ValueError:
                     print("Valor inválido")
         else:
-            print("Você não tem mais saques disponíveis")
+            print("Você não tem mais transações disponíveis")
     elif opcao == "D":
-        while True:
-            try:
-                valor_deposito = float(input("Quanto deseja depositar?"))
-                if valor_deposito > 0:
-                    saldo += valor_deposito
-                    print(f"Seu novo saldo é R${saldo:.2f}")
-                    horario = datetime.now().strftime("%H:%M:%S")
-                    nova_movimentacao = (horario,"Depósito",valor_deposito,saldo)
-                    historico_de_movimentacoes.append(nova_movimentacao)
-                    break
-                elif valor_deposito == 0:
-                    break
-                else:
-                    print("Digite um valor maior ou igual a que zero")
-            except ValueError:
-                print("Valor inválido")
+        if transacoes_disponiveis >= 1:
+            print(f"Seu saldo atual é de R${saldo:.2f}")        
+            while True:
+                try:
+                    valor_deposito = float(input("Quanto deseja depositar?"))
+                    if valor_deposito > 0:
+                        if date.today() == data_da_ultima_transacao:
+                            transacoes_disponiveis -= 1
+                        else:
+                            data_da_ultima_transacao = date.today()
+                            transacoes_disponiveis = limite_de_transacoes
+                            transacoes_disponiveis -= 1                        
+                        saldo += valor_deposito
+                        print(f"Seu novo saldo é R${saldo:.2f}")
+                        if transacoes_disponiveis > 0:
+                            print(f"Você ainda tem {transacoes_disponiveis} transações disponíveis hoje")
+                        else:
+                            print("Você não tem mais transações disponíveis hoje")                    
+                        horario = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        nova_movimentacao = (horario,"Depósito",valor_deposito,saldo)
+                        historico_de_movimentacoes.append(nova_movimentacao)
+                        break
+                    elif valor_deposito == 0:
+                        break
+                    else:
+                        print("Digite um valor maior ou igual a que zero")
+                except ValueError:
+                    print("Valor inválido")
+        else:
+            print("Você não tem mais transações disponíveis")                    
     elif opcao == "E":
         print("\nSeu extrato de movimentações é:")
         print(f"\nSaldo inicial: R${saldo_inicial}\n")
